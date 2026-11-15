@@ -1,0 +1,8 @@
+{
+  "name": "Remix Laxafit",
+  "description": "Personalized beginner yoga routines in a serene blue palette with Watch H9 Bluetooth sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

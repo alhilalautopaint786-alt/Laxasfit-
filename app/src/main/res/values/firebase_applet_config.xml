@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="firestore_database_id" translatable="false">ai-studio-android-laxafit-be2b015d-8e3d-4cc7-b5f4-25e191a37ea8</string>
+    <string name="recaptcha_site_key" translatable="false">6LfxVyEuAAAAAPPVE8Prcxp9XHnGmItDkCSx3pLL</string>
+</resources>

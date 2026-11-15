@@ -1,0 +1,206 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidLevel(level) {
+      return level in ['brand_new', 'gentle_beginner', 'steady_beginner'];
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.experienceLevel is string && isValidLevel(data.experienceLevel) &&
+             data.primaryGoal is string && data.primaryGoal.size() >= 1 && data.primaryGoal.size() <= 80 &&
+             data.preferredMinutes is int && data.preferredMinutes >= 5 && data.preferredMinutes <= 60 &&
+             data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 10000 &&
+             data.totalMinutes is int && data.totalMinutes >= 0 && data.totalMinutes <= 1000000 &&
+             data.totalSessions is int && data.totalSessions >= 0 && data.totalSessions <= 100000 &&
+             (!('watchH9PairedName' in data) || (data.watchH9PairedName is string && data.watchH9PairedName.size() <= 80)) &&
+             (!('watchH9MacAddress' in data) || (data.watchH9MacAddress is string && data.watchH9MacAddress.size() <= 40)) &&
+             (!('lastRestingHr' in data) || (data.lastRestingHr is int && data.lastRestingHr >= 30 && data.lastRestingHr <= 240)) &&
+             (!('lastWatchBattery' in data) || (data.lastWatchBattery is int && data.lastWatchBattery >= 0 && data.lastWatchBattery <= 100)) &&
+             (!('lastWatchSyncEpochMs' in data) || (data.lastWatchSyncEpochMs is int && data.lastWatchSyncEpochMs >= 0)) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidYogaRoutine(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.subtitle is string && data.subtitle.size() >= 1 && data.subtitle.size() <= 200 &&
+             data.focusArea is string && data.focusArea.size() >= 1 && data.focusArea.size() <= 60 &&
+             data.level is string && isValidLevel(data.level) &&
+             data.durationMinutes is int && data.durationMinutes >= 1 && data.durationMinutes <= 90 &&
+             data.targetHrMin is int && data.targetHrMin >= 40 && data.targetHrMin <= 180 &&
+             data.targetHrMax is int && data.targetHrMax >= 50 && data.targetHrMax <= 200 &&
+             data.targetHrMax >= data.targetHrMin &&
+             data.isAiGenerated is bool &&
+             data.isFavorite is bool &&
+             data.poses is list && data.poses.size() >= 1 && data.poses.size() <= 20 &&
+             data.poses[0] is map &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidYogaSessionLog(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.routineId is string && data.routineId.size() >= 1 && data.routineId.size() <= 128 &&
+             data.routineTitle is string && data.routineTitle.size() >= 1 && data.routineTitle.size() <= 100 &&
+             data.focusArea is string && data.focusArea.size() >= 1 && data.focusArea.size() <= 60 &&
+             data.durationMinutes is int && data.durationMinutes >= 1 && data.durationMinutes <= 120 &&
+             data.posesCompleted is int && data.posesCompleted >= 1 && data.posesCompleted <= 50 &&
+             (!('avgHeartRate' in data) || (data.avgHeartRate is int && data.avgHeartRate >= 0 && data.avgHeartRate <= 240)) &&
+             (!('peakHeartRate' in data) || (data.peakHeartRate is int && data.peakHeartRate >= 0 && data.peakHeartRate <= 240)) &&
+             data.syncedFromWatchH9 is bool &&
+             data.feeling in ['too_gentle', 'just_right', 'challenging'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidWatchSyncRecord(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.deviceName is string && data.deviceName.size() >= 1 && data.deviceName.size() <= 80 &&
+             data.deviceAddress is string && data.deviceAddress.size() >= 1 && data.deviceAddress.size() <= 40 &&
+             data.heartRateBpm is int && data.heartRateBpm >= 30 && data.heartRateBpm <= 240 &&
+             data.batteryPercent is int && data.batteryPercent >= 0 && data.batteryPercent <= 100 &&
+             data.stepsToday is int && data.stepsToday >= 0 && data.stepsToday <= 200000 &&
+             data.recoveryStatus is string && data.recoveryStatus.size() >= 1 && data.recoveryStatus.size() <= 60 &&
+             data.source in ['ble_gatt', 'manual_watch_entry'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'experienceLevel', 'primaryGoal',
+                         'preferredMinutes', 'streakDays', 'totalMinutes', 'totalSessions',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'experienceLevel', 'primaryGoal',
+                         'preferredMinutes', 'streakDays', 'totalMinutes', 'totalSessions',
+                         'watchH9PairedName', 'watchH9MacAddress', 'lastRestingHr',
+                         'lastWatchBattery', 'lastWatchSyncEpochMs', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt <= request.time &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'experienceLevel', 'primaryGoal', 'preferredMinutes',
+                         'streakDays', 'totalMinutes', 'totalSessions',
+                         'watchH9PairedName', 'watchH9MacAddress', 'lastRestingHr',
+                         'lastWatchBattery', 'lastWatchSyncEpochMs', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /routines/{routineId} {
+        allow get: if isOwner(userId) && isValidId(routineId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(routineId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'subtitle', 'focusArea', 'level',
+                           'durationMinutes', 'targetHrMin', 'targetHrMax',
+                           'isAiGenerated', 'isFavorite', 'poses', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'subtitle', 'focusArea', 'level',
+                           'durationMinutes', 'targetHrMin', 'targetHrMax',
+                           'isAiGenerated', 'isFavorite', 'poses', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().createdAt <= request.time &&
+                         isValidYogaRoutine(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(routineId) &&
+                         isValidYogaRoutine(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'subtitle', 'focusArea', 'level',
+                           'durationMinutes', 'targetHrMin', 'targetHrMax',
+                           'isFavorite', 'poses', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(routineId);
+      }
+
+      match /sessions/{sessionId} {
+        allow get: if isOwner(userId) && isValidId(sessionId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(sessionId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'routineId', 'routineTitle', 'focusArea',
+                           'durationMinutes', 'posesCompleted', 'syncedFromWatchH9',
+                           'feeling', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'routineId', 'routineTitle', 'focusArea',
+                           'durationMinutes', 'posesCompleted', 'avgHeartRate',
+                           'peakHeartRate', 'syncedFromWatchH9', 'feeling', 'createdAt'
+                         ]) &&
+                         isValidYogaSessionLog(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(sessionId);
+      }
+
+      match /watch_syncs/{syncId} {
+        allow get: if isOwner(userId) && isValidId(syncId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(syncId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'deviceName', 'deviceAddress', 'heartRateBpm',
+                           'batteryPercent', 'stepsToday', 'recoveryStatus', 'source', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'deviceName', 'deviceAddress', 'heartRateBpm',
+                           'batteryPercent', 'stepsToday', 'recoveryStatus', 'source', 'createdAt'
+                         ]) &&
+                         isValidWatchSyncRecord(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(syncId);
+      }
+    }
+  }
+}

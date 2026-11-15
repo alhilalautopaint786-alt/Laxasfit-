@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Beginner yoga practitioner profile, preferences, streak metrics, and Watch H9 pairing state.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "displayName": { "type": "string", "description": "User display name." },
+        "experienceLevel": {
+          "type": "string",
+          "enum": ["brand_new", "gentle_beginner", "steady_beginner"],
+          "description": "Beginner comfort tier."
+        },
+        "primaryGoal": { "type": "string", "description": "Primary wellness or mobility focus." },
+        "preferredMinutes": { "type": "integer", "description": "Preferred routine duration in minutes." },
+        "streakDays": { "type": "integer", "description": "Consecutive active practice days." },
+        "totalMinutes": { "type": "integer", "description": "Cumulative yoga minutes logged." },
+        "totalSessions": { "type": "integer", "description": "Total completed yoga sessions." },
+        "watchH9PairedName": { "type": "string", "description": "Paired Watch H9 Bluetooth device name." },
+        "watchH9MacAddress": { "type": "string", "description": "Paired Watch H9 BLE MAC address." },
+        "lastRestingHr": { "type": "integer", "description": "Most recent Watch H9 resting/current heart rate BPM." },
+        "lastWatchBattery": { "type": "integer", "description": "Most recent Watch H9 battery percentage." },
+        "lastWatchSyncEpochMs": { "type": "integer", "description": "Epoch millis of latest Watch H9 sync." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "displayName", "experienceLevel", "primaryGoal", "preferredMinutes", "streakDays", "totalMinutes", "totalSessions", "createdAt", "updatedAt"]
+    },
+    "YogaRoutine": {
+      "title": "YogaRoutine",
+      "description": "Personalized or saved beginner yoga sequence with target Watch H9 heart rate range.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "title": { "type": "string", "description": "Routine title." },
+        "subtitle": { "type": "string", "description": "Short encouragement or benefit summary." },
+        "focusArea": { "type": "string", "description": "Target area such as Back & Posture or Morning Mobility." },
+        "level": {
+          "type": "string",
+          "enum": ["brand_new", "gentle_beginner", "steady_beginner"],
+          "description": "Beginner difficulty level."
+        },
+        "durationMinutes": { "type": "integer", "description": "Total routine length in minutes." },
+        "targetHrMin": { "type": "integer", "description": "Lower bound of Watch H9 target heart rate BPM." },
+        "targetHrMax": { "type": "integer", "description": "Upper bound of Watch H9 target heart rate BPM." },
+        "isAiGenerated": { "type": "boolean", "description": "True if generated via Firebase AI Logic." },
+        "isFavorite": { "type": "boolean", "description": "True if starred by the user." },
+        "poses": { "type": "array", "description": "Ordered list of beginner yoga pose steps." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "title", "subtitle", "focusArea", "level", "durationMinutes", "targetHrMin", "targetHrMax", "isAiGenerated", "isFavorite", "poses", "createdAt", "updatedAt"]
+    },
+    "YogaSessionLog": {
+      "title": "YogaSessionLog",
+      "description": "Completed yoga practice record with optional Watch H9 biometric summary.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "routineId": { "type": "string", "description": "ID of the practiced routine." },
+        "routineTitle": { "type": "string", "description": "Title of the practiced routine." },
+        "focusArea": { "type": "string", "description": "Focus area practiced." },
+        "durationMinutes": { "type": "integer", "description": "Minutes practiced." },
+        "posesCompleted": { "type": "integer", "description": "Number of poses finished." },
+        "avgHeartRate": { "type": "integer", "description": "Average Watch H9 heart rate BPM during session." },
+        "peakHeartRate": { "type": "integer", "description": "Peak Watch H9 heart rate BPM during session." },
+        "syncedFromWatchH9": { "type": "boolean", "description": "True if Watch H9 supplied live telemetry." },
+        "feeling": {
+          "type": "string",
+          "enum": ["too_gentle", "just_right", "challenging"],
+          "description": "Post-session beginner comfort rating."
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp when logged." }
+      },
+      "required": ["userId", "routineId", "routineTitle", "focusArea", "durationMinutes", "posesCompleted", "syncedFromWatchH9", "feeling", "createdAt"]
+    },
+    "WatchSyncRecord": {
+      "title": "WatchSyncRecord",
+      "description": "Biometric snapshot synced from the user's Watch H9 device.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "deviceName": { "type": "string", "description": "Watch H9 BLE device name." },
+        "deviceAddress": { "type": "string", "description": "Watch H9 BLE address or identifier." },
+        "heartRateBpm": { "type": "integer", "description": "Heart rate in BPM." },
+        "batteryPercent": { "type": "integer", "description": "Watch H9 battery level percentage." },
+        "stepsToday": { "type": "integer", "description": "Steps synced from Watch H9." },
+        "recoveryStatus": { "type": "string", "description": "Derived recovery readiness label." },
+        "source": {
+          "type": "string",
+          "enum": ["ble_gatt", "manual_watch_entry"],
+          "description": "Origin of the Watch H9 telemetry."
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of sync." }
+      },
+      "required": ["userId", "deviceName", "deviceAddress", "heartRateBpm", "batteryPercent", "stepsToday", "recoveryStatus", "source", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User beginner yoga profile and Watch H9 pairing summary."
+    },
+    "/users/{userId}/routines/{routineId}": {
+      "schema": { "$ref": "#/entities/YogaRoutine" },
+      "description": "User's personalized and saved beginner yoga routines."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/YogaSessionLog" },
+      "description": "User's completed beginner yoga session logs."
+    },
+    "/users/{userId}/watch_syncs/{syncId}": {
+      "schema": { "$ref": "#/entities/WatchSyncRecord" },
+      "description": "Watch H9 telemetry snapshots synced by the user."
+    }
+  }
+}
